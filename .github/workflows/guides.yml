@@ -8,9 +8,6 @@ on:
   push:
     branches:
       - main
-      # Included so this pull request's push can be verified. Safe to leave:
-      # only this branch name matches, and it does not affect the daily schedule.
-      - cursor/guides-push-trigger-1ce2
     paths:
       - .github/workflows/guides.yml
       - scripts/**

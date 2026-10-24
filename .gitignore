@@ -1,0 +1,6 @@
+dist/
+epg/
+*.xml.gz
+*.xml
+__pycache__/
+.guides-work/

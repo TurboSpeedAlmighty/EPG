@@ -1,0 +1,58 @@
+name: Build EPG guides
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:00 UTC. Scheduled runs start only after this file is on the default branch.
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: epg-guides
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EPG_DIR: ${{ runner.temp }}/epg
+      PYTHONUNBUFFERED: "1"
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check channel matching
+        run: python3 scripts/build_guide.py --self-test
+
+      - name: Clone iptv-org/epg
+        run: git clone --depth 1 https://github.com/iptv-org/epg.git "$EPG_DIR"
+
+      - name: Install grabber
+        working-directory: ${{ runner.temp }}/epg
+        run: npm ci --no-audit --no-fund
+
+      - name: Build United States and Mexico guides
+        run: |
+          set +e
+          mkdir -p dist
+          python3 scripts/build_guide.py --country us --epg-dir "$EPG_DIR" --output dist/us.xml.gz --days 3 --max-connections 10
+          us=$?
+          python3 scripts/build_guide.py --country mx --epg-dir "$EPG_DIR" --output dist/mx.xml.gz --days 3 --max-connections 10
+          mx=$?
+          python3 scripts/validate_guides.py dist/us.xml.gz dist/mx.xml.gz
+          val=$?
+          bash scripts/publish_guides.sh
+          pub=$?
+          echo "us=${us} mx=${mx} validate=${val} publish=${pub}"
+          if [[ "$us" -ne 0 || "$mx" -ne 0 || "$val" -ne 0 || "$pub" -ne 0 ]]; then
+            exit 1
+          fi

@@ -5,6 +5,12 @@ on:
   schedule:
     # 06:00 UTC. Scheduled runs start only after this file is on the default branch.
     - cron: "0 6 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/guides.yml
+      - scripts/**
 
 permissions:
   contents: write

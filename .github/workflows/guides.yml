@@ -5,6 +5,12 @@ on:
   schedule:
     # 06:00 UTC. Scheduled runs start only after this file is on the default branch.
     - cron: "0 6 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/guides.yml
+      - scripts/**
 
 permissions:
   contents: write
@@ -18,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      EPG_DIR: ${{ runner.temp }}/epg
       PYTHONUNBUFFERED: "1"
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
@@ -34,6 +39,9 @@ jobs:
         run: python3 scripts/build_guide.py --self-test
 
       - name: Clone iptv-org/epg
+        env:
+          # runner is not available on the job env block; it is available on steps.
+          EPG_DIR: ${{ runner.temp }}/epg
         run: git clone --depth 1 https://github.com/iptv-org/epg.git "$EPG_DIR"
 
       - name: Install grabber
@@ -41,6 +49,8 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build United States and Mexico guides
+        env:
+          EPG_DIR: ${{ runner.temp }}/epg
         run: |
           set +e
           mkdir -p dist

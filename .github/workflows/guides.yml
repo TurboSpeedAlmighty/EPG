@@ -8,6 +8,9 @@ on:
   push:
     branches:
       - main
+      # Included so this pull request's push can be verified. Safe to leave:
+      # only this branch name matches, and it does not affect the daily schedule.
+      - cursor/guides-push-trigger-1ce2
     paths:
       - .github/workflows/guides.yml
       - scripts/**
@@ -24,7 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      EPG_DIR: ${{ runner.temp }}/epg
       PYTHONUNBUFFERED: "1"
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
@@ -40,6 +42,9 @@ jobs:
         run: python3 scripts/build_guide.py --self-test
 
       - name: Clone iptv-org/epg
+        env:
+          # runner is not available on the job env block; it is available on steps.
+          EPG_DIR: ${{ runner.temp }}/epg
         run: git clone --depth 1 https://github.com/iptv-org/epg.git "$EPG_DIR"
 
       - name: Install grabber
@@ -47,6 +52,8 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build United States and Mexico guides
+        env:
+          EPG_DIR: ${{ runner.temp }}/epg
         run: |
           set +e
           mkdir -p dist
